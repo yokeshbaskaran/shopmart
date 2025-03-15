@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { API_URL } from "../../context/AppContext";
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 
 const Authpage = () => {
   const [auth, setauth] = useState(true);
@@ -20,29 +21,39 @@ const Authpage = () => {
   };
 
   const handleRegister = async ({ username, email, password }) => {
-    const response = await axios.post(API_URL + "/auth/signup", {
-      username,
-      email,
-      password,
-    });
+    try {
+      const response = await axios.post(API_URL + "/auth/signup", {
+        username,
+        email,
+        password,
+      });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Failed to create account");
-    console.log(data);
-    return data;
+      const data = await response.data;
+      if (!response.ok)
+        throw new Error(data.error || "Failed to create account");
+      if (data.error) throw new Error(data.error);
+      console.log(data);
+      return data;
+    } catch (error) {
+      throw new Error(
+        error.message || "Something went wrong. Please try again."
+      );
+    }
   };
 
   const { mutate, isError, error } = useMutation({
     mutationFn: auth ? handleLogin : handleRegister,
-    onSuccess: () => {
-      console.log("User registered success!");
+    onSuccess: (data) => {
+      console.log("User registered success!", data);
     },
-    onError: () => {},
+    onError: (err) => {
+      toast.error("Not registered", err.message);
+    },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("formData", formData);
+    // console.log("formData", formData);
     mutate(formData);
   };
 
@@ -144,8 +155,10 @@ const Authpage = () => {
             </button>
           </form>
 
-          <div className="">
-            {isError && <p className="text-red-400">{error.message}</p>}
+          <div>
+            {isError && error && (
+              <p className="text-red-500 text-center">{error.message}</p>
+            )}
           </div>
 
           {/* divider  */}
